@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoAtlas — Demografik Harita</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<header class="navbar">
+  <div class="navbar-brand">
+    <div class="brand-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+        <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-title">GeoAtlas</span>
+      <span class="brand-sub">Demografik Harita</span>
+    </div>
+  </div>
+  <div class="navbar-right">
+    <button class="nav-btn" id="btn-toggle-sidebar" title="Paneli aç/kapat">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>
+      </svg>
+      <span>Panel</span>
+    </button>
+    <div class="nav-divider"></div>
+    <button class="nav-btn nav-btn-primary" id="btn-upload-excel" title="Demografik veri yükle">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <span>Veri Yükle</span>
+    </button>
+  </div>
+</header>
+
+<!-- ===== APP LAYOUT ===== -->
+<div class="app-layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Icon Rail -->
+    <div class="sidebar-rail">
+      <button class="rail-btn active" data-panel="layers" title="Katmanlar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span>Katmanlar</span>
+      </button>
+      <button class="rail-btn" data-panel="poi" title="Noktasal Veriler">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>POI</span>
+      </button>
+      <button class="rail-btn" data-panel="groups" title="Gruplar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Gruplar</span>
+      </button>
+      <button class="rail-btn" data-panel="labels" title="Etiketler">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+          <path d="M13 13l6 6"/>
+        </svg>
+        <span>Etiketler</span>
+      </button>
+      <button class="rail-btn" data-panel="status" title="Veriler">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>Veriler</span>
+      </button>
+    </div>
+
+    <!-- Panels -->
+    <div class="sidebar-panels">
+
+      <!-- LAYERS PANEL -->
+      <div class="panel active" id="panel-layers">
+        <div class="panel-header">
+          <span class="panel-title">Harita Katmanları</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="layer-section">
+            <div class="layer-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              Türkiye
+            </div>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-provinces" class="layer-cb" />
+              <span class="layer-dot" style="--c:#3b82f6"></span>
+              <span class="layer-name">İl Sınırları</span>
+            </label>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-districts" class="layer-cb" />
+              <span class="layer-dot" style="--c:#f97316"></span>
+              <span class="layer-name">İlçe Sınırları</span>
+            </label>
+          </div>
+
+          <div class="layer-section region-only hidden">
+            <div class="layer-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              Avrupa
+            </div>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-countries" class="layer-cb" />
+              <span class="layer-dot" style="--c:#0f766e"></span>
+              <span class="layer-name">Ülke Sınırları</span>
+            </label>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-regions-l3" class="layer-cb" />
+              <span class="layer-dot" style="--c:#14b8a6"></span>
+              <span class="layer-name">Bölge Sınırları</span>
+            </label>
+          </div>
+
+          <div class="layer-section">
+            <div class="layer-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Demografik Renklendirme
+            </div>
+            <div class="metric-chips" id="choropleth-chips">
+              <button class="metric-chip" data-metric="toplam_nufus"><span class="chip-dot" style="background:#2c7fb8"></span>Nüfus</button>
+              <button class="metric-chip" data-metric="medyan_yas"><span class="chip-dot" style="background:#de2d26"></span>Medyan Yaş</button>
+              <button class="metric-chip" data-metric="nufus_yogunluk"><span class="chip-dot" style="background:#756bb1"></span>Yoğunluk</button>
+              <button class="metric-chip" data-metric="kadin_oran"><span class="chip-dot" style="background:#df65b0"></span>Kadın %</button>
+              <button class="metric-chip" data-metric="erkek_oran"><span class="chip-dot" style="background:#2171b5"></span>Erkek %</button>
+              <button class="metric-chip" data-metric="nufus_artis_hizi"><span class="chip-dot" style="background:#31a354"></span>Artış %</button>
+            </div>
+          </div>
+
+          <div class="layer-section">
+            <div class="layer-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              Kullanıcı Verileri
+            </div>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-labels" class="layer-cb" />
+              <span class="layer-dot" style="--c:#f43f5e"></span>
+              <span class="layer-name">Özel Etiketler</span>
+            </label>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-groups" class="layer-cb" />
+              <span class="layer-dot" style="--c:#a855f7"></span>
+              <span class="layer-name">Bölge Grupları</span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- POI PANEL -->
+      <div class="panel" id="panel-poi">
+        <div class="panel-header">
+          <span class="panel-title">Noktasal Veriler</span>
+        </div>
+        <div class="panel-body">
+
+          <!-- POI Kapsam Kartı (yalnızca Avrupa modunda) -->
+          <div class="poi-scope-card region-only hidden" id="poi-scope-section">
+            <div class="poi-scope-card-header">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/><path d="M12 2a15 15 0 0 0 0 20"/></svg>
+              Ülke Kapsamı
+            </div>
+            <select id="poi-country-select" class="field-select" style="margin-top:8px">
+              <option value="TR">Türkiye</option>
+            </select>
+            <p class="field-hint" style="margin-top:6px;line-height:1.4">Veri sağlanan ülkelerde katman açılır, eksik veri için uyarı gösterilir.</p>
+          </div>
+
+          <!-- Eğitim Kurumları -->
+          <div class="layer-section">
+            <div class="layer-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              Eğitim Kurumları
+            </div>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-kindergartens" class="layer-cb" />
+              <span class="layer-dot" style="--c:#06b6d4"></span>
+              <span class="layer-name">Anaokulu / Kreş</span>
+            </label>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-schools" class="layer-cb" />
+              <span class="layer-dot" style="--c:#22c55e"></span>
+              <span class="layer-name">İlk / Orta / Lise</span>
+            </label>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-universities" class="layer-cb" />
+              <span class="layer-dot" style="--c:#ef4444"></span>
+              <span class="layer-name">Üniversite</span>
+            </label>
+          </div>
+
+          <!-- İbadethaneler -->
+          <div class="layer-section">
+            <div class="layer-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V8a9 9 0 0 1 18 0v14"/><line x1="3" y1="22" x2="21" y2="22"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="9.5" y1="13.5" x2="14.5" y2="13.5"/></svg>
+              İbadethaneler
+            </div>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-mosques" class="layer-cb" />
+              <span class="layer-dot" style="--c:#10b981"></span>
+              <span class="layer-name">Cami / Mescid</span>
+            </label>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-churches" class="layer-cb" />
+              <span class="layer-dot" style="--c:#8b5cf6"></span>
+              <span class="layer-name">Kilise / Katedral</span>
+            </label>
+            <label class="layer-row">
+              <input type="checkbox" id="layer-worship-other" class="layer-cb" />
+              <span class="layer-dot" style="--c:#94a3b8"></span>
+              <span class="layer-name">Diğer İbadethaneler</span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- GROUPS PANEL -->
+      <div class="panel" id="panel-groups">
+        <div class="panel-header">
+          <span class="panel-title">Bölge Grupları</span>
+          <button class="panel-action-btn" id="btn-new-group" title="Yeni grup">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Yeni Grup
+          </button>
+        </div>
+        <div class="panel-body">
+          <!-- Canlı seçim oturumu (sadece bölge seçim modunda görünür) -->
+          <div id="select-session" class="select-session hidden">
+            <div class="select-session-title">
+              <span class="select-banner-dot"></span>
+              <span id="select-session-label">Seçilen Bölgeler</span>
+            </div>
+            <div id="select-session-list" class="select-session-list">
+              <span class="select-session-empty">Haritadan bölgeye tıklayın…</span>
+            </div>
+          </div>
+          <div id="groups-list" class="item-list">
+            <div class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+              </svg>
+              <p>Henüz grup yok</p>
+              <span>Bölgeleri gruplayarak toplam nüfusu ve demografiyi hesaplayın</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LABELS PANEL -->
+      <div class="panel" id="panel-labels">
+        <div class="panel-header">
+          <span class="panel-title">Özel Etiketler</span>
+          <button class="panel-action-btn" id="btn-new-label" title="Yeni etiket">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Yeni Etiket
+          </button>
+        </div>
+        <div class="panel-body">
+          <div id="labels-list" class="item-list">
+            <div class="empty-state">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".3">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <p>Henüz etiket yok</p>
+              <span>Haritaya özel konumlar ekleyin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATUS PANEL -->
+      <div class="panel" id="panel-status">
+        <div class="panel-header">
+          <span class="panel-title">Veriler</span>
+        </div>
+        <div class="panel-body">
+          <div id="poi-status" class="status-list">
+            <div class="status-loading">
+              <div class="mini-spinner"></div>
+              <span>Kontrol ediliyor...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div><!-- /sidebar-panels -->
+  </aside>
+
+  <!-- ===== MAP ===== -->
+  <main class="map-container">
+    <div id="map"></div>
+
+    <!-- Top Progress Bar (POI / district loads) -->
+    <div id="top-progress" class="top-progress hidden"></div>
+
+    <!-- Tile Switcher -->
+    <div class="tile-switcher">
+      <button class="tile-btn active" data-tile="carto_light" style="--swatch:#f4f6f8">Sade</button>
+      <button class="tile-btn" data-tile="carto_dark" style="--swatch:#1f2937">Gece</button>
+      <button class="tile-btn" data-tile="osm" style="--swatch:#aadaa0">Sokak</button>
+      <button class="tile-btn" data-tile="esri" style="--swatch:#4b6b3a">Uydu</button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <p id="loading-text">Yükleniyor...</p>
+      </div>
+    </div>
+
+    <!-- Choropleth Legend -->
+    <div id="choropleth-legend" class="choropleth-legend hidden"></div>
+  </main>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Excel Upload Modal -->
+<div class="modal-overlay hidden" id="modal-excel">
+  <div class="modal modal-upload">
+    <div class="modal-header">
+      <div class="modal-header-icon" style="background:#f0fdf4;color:#16a34a">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <div class="modal-header-text">
+        <h2>Veri Yükle</h2>
+        <p id="excel-modal-subtitle">Veri türünü seçin</p>
+      </div>
+      <button class="modal-x" data-close-modal="modal-excel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Adım 1: Kapsam seçimi -->
+    <div class="modal-body" id="excel-step-1">
+      <div class="scope-grid">
+        <button class="scope-card" data-scope="turkey">
+          <span class="scope-card-flag">🇹🇷</span>
+          <span class="scope-card-title">Türkiye</span>
+          <span class="scope-card-desc">İl ve ilçe nüfus verileri</span>
+        </button>
+        <button class="scope-card" data-scope="europe">
+          <span class="scope-card-flag">🌍</span>
+          <span class="scope-card-title">Avrupa</span>
+          <span class="scope-card-desc">Ülke ve bölge istatistikleri</span>
+        </button>
+        <button class="scope-card" data-scope="labels">
+          <span class="scope-card-flag">📍</span>
+          <span class="scope-card-title">Etiketler</span>
+          <span class="scope-card-desc">Toplu konum yükle</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Adım 2: Dosya yükle -->
+    <div class="modal-body hidden" id="excel-step-2">
+      <button class="upload-back-btn" id="btn-excel-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Geri
+      </button>
+      <div class="drop-zone" id="excel-drop-area">
+        <input type="file" id="excel-file-input" accept=".xlsx,.xls" style="display:none" />
+        <div class="drop-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+        </div>
+        <p class="drop-text">Dosyayı buraya sürükleyin</p>
+        <p class="drop-hint">veya</p>
+        <button class="btn btn-secondary btn-sm" id="btn-select-excel-file">Dosya Seç</button>
+        <p id="selected-file-name" class="drop-filename"></p>
+      </div>
+      <div id="excel-scope-info" class="info-box" style="line-height:1.6"></div>
+      <a href="/api/excel/template" download class="btn btn-secondary btn-sm" style="align-self:flex-start">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Şablon İndir (.xlsx)
+      </a>
+      <div id="excel-upload-result" class="hidden"></div>
+    </div>
+
+    <!-- Footer 1 -->
+    <div class="modal-footer" id="excel-footer-1">
+      <button class="btn btn-ghost" data-close-modal="modal-excel">Kapat</button>
+    </div>
+    <!-- Footer 2 -->
+    <div class="modal-footer hidden" id="excel-footer-2">
+      <button class="btn btn-ghost" data-close-modal="modal-excel">İptal</button>
+      <button class="btn btn-primary" id="btn-do-upload-excel">Yükle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Group Modal -->
+<div class="modal-overlay hidden" id="modal-group">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-icon" style="background:#faf5ff;color:#7c3aed">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div class="modal-header-text">
+        <h2 id="modal-group-title">Yeni Grup Oluştur</h2>
+        <p>Birden fazla bölgeyi gruplayarak istatistik çıkarın</p>
+      </div>
+      <button class="modal-x" data-close-modal="modal-group">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <label class="form-field">
+        <span class="field-label">Grup Adı</span>
+        <input type="text" id="group-name-input" class="field-input" placeholder="örn: Marmara Bölgesi" />
+      </label>
+      <div class="form-field">
+        <span class="field-label">Grup Türü</span>
+        <div class="segmented" id="group-type-seg">
+          <button type="button" class="seg-btn" data-type="country">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>
+            Ülke
+          </button>
+          <button type="button" class="seg-btn active" data-type="region">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>
+            Bölge
+          </button>
+          <button type="button" class="seg-btn" data-type="subregion">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Alt Bölge
+          </button>
+        </div>
+        <span class="field-hint">Gruba yalnızca seçilen katman tipindeki bölgeler eklenebilir.</span>
+      </div>
+      <label class="form-field">
+        <span class="field-label">Renk</span>
+        <div class="color-row">
+          <input type="color" id="group-color-input" value="#7c3aed" class="color-input" />
+          <span id="group-color-preview" class="color-swatch" style="background:#7c3aed"></span>
+          <span class="field-hint">Harita üzerindeki vurgulama rengi</span>
+        </div>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close-modal="modal-group">İptal</button>
+      <button class="btn btn-primary" id="btn-save-group">Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Label Modal -->
+<div class="modal-overlay hidden" id="modal-label">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-icon" style="background:#fff1f2;color:#e11d48">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+      </div>
+      <div class="modal-header-text">
+        <h2>Yeni Etiket Ekle</h2>
+        <p>Haritaya özel konum işareti ekleyin</p>
+      </div>
+      <button class="modal-x" data-close-modal="modal-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Canlı önizleme -->
+      <div class="label-preview">
+        <div class="label-preview-pin" id="label-preview-pin" style="--c:#f43f5e">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/></svg>
+        </div>
+        <div class="label-preview-text">
+          <div class="label-preview-name" id="label-preview-name">Yeni Etiket</div>
+          <div class="label-preview-coord" id="label-preview-coord">Konum seçilmedi</div>
+        </div>
+      </div>
+
+      <label class="form-field">
+        <span class="field-label">Etiket Adı</span>
+        <input type="text" id="label-name-input" class="field-input" placeholder="Konum adı" />
+      </label>
+
+      <div class="form-field">
+        <span class="field-label">İkon</span>
+        <div class="icon-picker" id="label-icon-picker">
+          <button type="button" class="icon-pick active" data-icon="pin" title="Toplu İğne">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/></svg>
+          </button>
+          <button type="button" class="icon-pick" data-icon="star" title="Yıldız">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 15,9 22,9.3 16.5,14 18.5,21 12,17 5.5,21 7.5,14 2,9.3 9,9"/></svg>
+          </button>
+          <button type="button" class="icon-pick" data-icon="circle" title="Daire">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+          </button>
+          <button type="button" class="icon-pick" data-icon="flag" title="Bayrak">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </button>
+        </div>
+        <input type="hidden" id="label-icon-input" value="pin" />
+      </div>
+
+      <div class="form-field">
+        <span class="field-label">Renk</span>
+        <div class="color-presets" id="label-color-presets">
+          <button type="button" class="color-preset active" data-color="#f43f5e" style="--c:#f43f5e"></button>
+          <button type="button" class="color-preset" data-color="#f97316" style="--c:#f97316"></button>
+          <button type="button" class="color-preset" data-color="#eab308" style="--c:#eab308"></button>
+          <button type="button" class="color-preset" data-color="#22c55e" style="--c:#22c55e"></button>
+          <button type="button" class="color-preset" data-color="#2563eb" style="--c:#2563eb"></button>
+          <button type="button" class="color-preset" data-color="#7c3aed" style="--c:#7c3aed"></button>
+          <input type="color" id="label-color-input" value="#f43f5e" class="color-input color-custom" title="Özel renk" />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <span class="field-label">Konum</span>
+        <div class="field-grid-2">
+          <input type="number" id="label-lat-input" class="field-input" step="0.0001" placeholder="Enlem (41.0082)" />
+          <input type="number" id="label-lon-input" class="field-input" step="0.0001" placeholder="Boylam (28.9784)" />
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-pick-on-map" style="margin-top:8px;align-self:flex-start">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Haritadan Seç
+        </button>
+      </div>
+
+      <label class="form-field">
+        <span class="field-label">Açıklama <span style="font-weight:400;color:var(--muted)">(opsiyonel)</span></span>
+        <textarea id="label-desc-input" class="field-input" rows="2" placeholder="Bu konum hakkında notlar..."></textarea>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close-modal="modal-label">İptal</button>
+      <button class="btn btn-primary" id="btn-save-label">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Select Mode Banner -->
+<div id="select-mode-banner" class="select-banner hidden">
+  <div class="select-banner-dot"></div>
+  <span id="select-mode-text">Gruba eklemek için bölgeye tıklayın</span>
+  <span class="select-count-badge" id="select-mode-count">0 bölge</span>
+  <button class="btn btn-sm btn-white" id="btn-exit-select-mode">Tamamla</button>
+</div>
+
+<!-- ===== FLOATING ASSISTANT ===== -->
+<div id="assistant-bubble-container">
+  <div id="assistant-chat-window" class="assistant-chat-window hidden">
+    <div class="assistant-chat-header">
+      <div class="assistant-chat-title">
+        <div class="assistant-chat-avatar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="assistant-chat-name">Demografi Asistanı</div>
+          <div class="assistant-chat-status">Çevrimiçi</div>
+        </div>
+      </div>
+      <div class="assistant-chat-actions">
+        <button class="icon-btn" id="btn-assistant-clear" title="Sohbeti temizle">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-assistant-close" title="Kapat">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="assistant-messages" class="assistant-messages">
+      <div class="assistant-msg bot">
+        <div class="assistant-bubble">
+          Merhaba! Türkiye ve Avrupa üzerine demografik veya mekansal sorular sorabilirsin. Desteklenen kısımlarda harita üzerinde görsel olarak da yardımcı olunacaktır!
+        </div>
+      </div>
+    </div>
+    <form id="assistant-form" class="assistant-input">
+      <input type="text" id="assistant-text" placeholder="Bir soru yazın…" autocomplete="off" />
+      <button type="submit" id="assistant-send" title="Gönder">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </form>
+  </div>
+  <button id="assistant-bubble-btn" class="assistant-bubble-btn" title="Demografi Asistanı">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  </button>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="js/config.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/map.js"></script>
+<script src="js/regions.js"></script>
+<script src="js/boundaries.js"></script>
+<script src="js/poi.js"></script>
+<script src="js/demographics.js"></script>
+<script src="js/choropleth.js"></script>
+<script src="js/groups.js"></script>
+<script src="js/labels.js"></script>
+<script src="js/excel_upload.js"></script>
+<script src="js/assistant.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
